@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -278,6 +279,7 @@ namespace ReQube.Tests
             expectedReportFileProperty.Value = string.Empty;
             actualReportFileProperty.Value = string.Empty;
 
+            actualXml.Should().BeEquivalentTo(expectedXml);
             Assert.True(XNode.DeepEquals(expectedXml, actualXml));
         }
 

@@ -13,6 +13,7 @@ using ReQube.Models;
 using ReQube.Models.ReSharper;
 using ReQube.Models.SonarQube;
 using ReQube.Models.SonarQube.Generic;
+using ReQube.Utils;
 using Serilog;
 using Constants = ReQube.Models.Constants;
 
@@ -75,7 +76,7 @@ namespace ReQube
                 // preferrably ReSharper's inspectcode should be run with the "-a" option, to generate absolute paths
                 reSharperReport.Information.Solution = Path.GetFullPath(reSharperReport.Information.Solution);
             }
-
+            reSharperReport.Information.Solution = reSharperReport.Information.Solution.Fix();
             var solutionDir = Path.GetDirectoryName(reSharperReport.Information.Solution);
 
             foreach (var project in reSharperReport.Issues)
@@ -184,16 +185,17 @@ namespace ReQube
             if (options.OutputFormat == SonarOutputFormat.Generic)
             {
                 // We need to write dummy report because SonarQube MSBuild reads a report from the root
-                WriteReport(
-                    GetOutputPath(baseDir, options.Output, string.Empty),
-                    SonarGenericReport.Empty);
+                var filePath = GetOutputPath(baseDir, options.Output, string.Empty);
+                filePath = filePath.Fix();
+                WriteReport(filePath, SonarGenericReport.Empty);
             }
 
             foreach (var sonarReport in sonarReports)
             {
+                var projectFolder = GetProjectFolder(solution, sonarReport.ProjectName);
                 var filePath = GetOutputPath(
                     baseDir,
-                    Path.Combine(GetProjectFolder(solution, sonarReport.ProjectName), options.Output),
+                    Path.Combine(projectFolder, options.Output),
                     sonarReport.ProjectName);
                 WriteReport(filePath, sonarReport);
             }
@@ -236,7 +238,8 @@ namespace ReQube
             var path = solution.Projects
                 .Where(x => x.Name == projectName && x.TypeGuid != Constants.ProjectTypeGuids["Solution Folder"])
                 .Select(x => x.Path)
-                .FirstOrDefault();
+                .FirstOrDefault()
+                .Fix();
 
             return path != null ? Path.GetDirectoryName(path) : projectName;
         }
